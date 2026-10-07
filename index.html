@@ -88,7 +88,7 @@
       color: #fff;
     }
 
-    /* BARRA DE FILTROS (CATEGORIAS) */
+    /* FILTROS */
     .filter-bar {
       display: flex;
       gap: 10px;
@@ -149,7 +149,7 @@
       margin-left: 10px;
     }
 
-    /* GRID & CARDS DE PRODUTO */
+    /* GRID & CARDS */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -251,7 +251,7 @@
       background: var(--primary-hover);
     }
 
-    /* BARRA FIXA DO CARRINHO */
+    /* BARRA FIXA CARRINHO */
     .cart-bar {
       position: fixed;
       bottom: 15px;
@@ -410,7 +410,7 @@
 
   <!-- CONTAINER DE PRODUTOS -->
   <div class="container" id="menu-container">
-    <p style="text-align: center; color: var(--text-muted); padding: 40px 0;">Carregando produtos...</p>
+    <p style="text-align: center; color: var(--text-muted); padding: 40px 0;">Carregando produtos em tempo real...</p>
   </div>
 
   <!-- BARRA FIXA DO CARRINHO -->
@@ -487,7 +487,7 @@
       <input type="number" step="0.01" id="prodPrice" class="input-field" placeholder="Preço (R$)">
       <input type="text" id="prodImage" class="input-field" placeholder="Link da Imagem (URL da foto)">
       
-      <button class="btn-save" onclick="saveProduct()">Salvar Produto</button>
+      <button class="btn-save" onclick="saveProduct()">Salvar Produto na Nuvem</button>
 
       <hr style="border-color: var(--card-border); margin: 20px 0;">
 
@@ -497,42 +497,33 @@
     </div>
   </div>
 
-  <!-- CONEXÃO FIREBASE (BANCO DE DADOS NA NUVEM) -->
+  <!-- CONEXÃO FIREBASE COM SUAS CHAVES REAIS -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Configuração do Banco de Dados
+    // Suas chaves exatas do Firebase
     const firebaseConfig = {
-      apiKey: "AIzaSyD-DummyKeyForDemoStorageOnly",
-      authDomain: "adega-ipanema-app.firebaseapp.com",
-      projectId: "adega-ipanema-app",
-      storageBucket: "adega-ipanema-app.appspot.com",
-      messagingSenderId: "1029384756",
-      appId: "1:1029384756:web:abcd1234efgh"
+      apiKey: "AIzaSyAD8YdIawzegcUmapHPHh49PlWY_UNLOQs",
+      authDomain: "adega-ipanema.firebaseapp.com",
+      projectId: "adega-ipanema",
+      storageBucket: "adega-ipanema.firebasestorage.app",
+      messagingSenderId: "625727155392",
+      appId: "1:625727155392:web:968fd44101f54b95f0d125",
+      measurementId: "G-JM3HNKQTDC"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // DADOS INICIAIS DE FAKE-FALLBACK / SEED
+    // Produtos padrão para carregar caso o banco esteja vazio no início
     const defaultProducts = [
       { category: "COPÕES", name: "Copão de Gin", desc: "Sabor refrescante com tônica e especiarias", price: 10.00, img: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80" },
       { category: "COPÕES", name: "Copão Whisky Red Label", desc: "Acompanha gelo de coco e energético", price: 20.00, img: "https://images.unsplash.com/photo-1527281400683-1aae777175f8?auto=format&fit=crop&w=400&q=80" },
-      { category: "COPÕES", name: "Copão Whisky Old Parr", desc: "Dose dupla com gelo saborizado", price: 30.00, img: "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=400&q=80" },
       { category: "GELOS", name: "Gelo Sabor Morango", desc: "Saboroso e de derretimento lento", price: 3.00, img: "https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?auto=format&fit=crop&w=400&q=80" },
-      { category: "GELOS", name: "Gelo Sabor Melancia", desc: "Ideal para drinks tropicais", price: 3.00, img: "https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?auto=format&fit=crop&w=400&q=80" },
-      { category: "GELOS", name: "Gelo Sabor Maçã Verde", desc: "Sabor cítrico para turbinar seu copão", price: 3.00, img: "https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?auto=format&fit=crop&w=400&q=80" },
-      { category: "GELOS", name: "Gelo de Coco", desc: "Feito com água de coco natural", price: 4.00, img: "https://images.unsplash.com/photo-1525385133512-2f3bdd039054?auto=format&fit=crop&w=400&q=80" },
       { category: "CERVEJAS", name: "Cerveja Brahma", desc: "Lata 350ml - Estupidamente gelada", price: 5.00, img: "https://images.unsplash.com/photo-1608270586620-248524c67de9?auto=format&fit=crop&w=400&q=80" },
-      { category: "CERVEJAS", name: "Cerveja Skol", desc: "Lata 350ml - Estupidamente gelada", price: 5.00, img: "https://images.unsplash.com/photo-1535958636474-b021ee887b13?auto=format&fit=crop&w=400&q=80" },
       { category: "ENERGÉTICOS", name: "Energético Tradicional", desc: "Lata 473ml", price: 10.00, img: "https://images.unsplash.com/photo-1622543925917-763c34d1a86e?auto=format&fit=crop&w=400&q=80" },
-      { category: "ENERGÉTICOS", name: "Energético Melancia", desc: "Lata 473ml Sabor Melancia", price: 10.00, img: "https://images.unsplash.com/photo-1622543925917-763c34d1a86e?auto=format&fit=crop&w=400&q=80" },
-      { category: "ENERGÉTICOS", name: "Energético Morango", desc: "Lata 473ml Sabor Morango", price: 10.00, img: "https://images.unsplash.com/photo-1622543925917-763c34d1a86e?auto=format&fit=crop&w=400&q=80" },
-      { category: "ENERGÉTICOS", name: "Energético Maçã Verde", desc: "Lata 473ml Sabor Maçã Verde", price: 10.00, img: "https://images.unsplash.com/photo-1622543925917-763c34d1a86e?auto=format&fit=crop&w=400&q=80" },
-      { category: "REFRIGERANTES & ÁGUA", name: "Coca-Cola", desc: "Lata 350ml geladinha", price: 6.00, img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=400&q=80" },
-      { category: "REFRIGERANTES & ÁGUA", name: "Dydyo", desc: "Lata 350ml", price: 5.00, img: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=400&q=80" },
-      { category: "REFRIGERANTES & ÁGUA", name: "Água Mineral", desc: "Garrafa 500ml sem gás", price: 3.00, img: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=400&q=80" }
+      { category: "REFRIGERANTES & ÁGUA", name: "Coca-Cola", desc: "Lata 350ml geladinha", price: 6.00, img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=400&q=80" }
     ];
 
     window.products = [];
@@ -549,8 +540,8 @@
         loadedProducts.push({ id: doc.id, ...doc.data() });
       });
 
-      if (loadedProducts.length === 0 && snapshot.metadata.fromCache === false) {
-        // Se o banco estiver vazio, carrega os padrões
+      if (loadedProducts.length === 0 && !snapshot.metadata.fromCache) {
+        // Se o banco de dados estiver novo e vazio, insere os produtos iniciais
         defaultProducts.forEach(async (p, idx) => {
           const id = "prod_" + idx + "_" + Date.now();
           await setDoc(doc(db, "products", id), p);
@@ -563,11 +554,6 @@
           window.renderAdminProducts();
         }
       }
-    }, (error) => {
-      console.warn("Usando produtos locais offline:", error);
-      window.products = defaultProducts;
-      window.renderFilters();
-      window.renderMenu();
     });
 
     // ESCUTAR CONFIGURAÇÕES NA NUVEM
@@ -579,7 +565,7 @@
       }
     });
 
-    // EXPOR FUNÇÕES PARA O ESCOPO GLOBAL
+    // FUNÇÕES DE COMUNICAÇÃO COM O FIREBASE
     window.saveProductToCloud = async function(id, productData) {
       const prodId = id || "prod_" + Date.now();
       await setDoc(doc(db, "products", prodId), productData);
@@ -603,9 +589,9 @@
       document.documentElement.style.setProperty('--bg-color', settings.bgColor);
       document.documentElement.style.setProperty('--primary-color', settings.primaryColor);
       
-      document.getElementById('cfgWhatsapp').value = settings.whatsapp;
-      document.getElementById('cfgBgColor').value = settings.bgColor;
-      document.getElementById('cfgPrimaryColor').value = settings.primaryColor;
+      document.getElementById('cfgWhatsapp').value = settings.whatsapp || "";
+      document.getElementById('cfgBgColor').value = settings.bgColor || "#0d0f12";
+      document.getElementById('cfgPrimaryColor').value = settings.primaryColor || "#ff7a00";
     }
 
     // RENDERIZAR FILTROS
@@ -677,7 +663,7 @@
       });
     }
 
-    // RENDERIZAR PAINEL ADMIN
+    // RENDERIZAR LISTA NO PAINEL ADMIN
     function renderAdminProducts() {
       const list = document.getElementById('admin-product-list');
       list.innerHTML = '';
@@ -799,7 +785,7 @@
         await window.saveSettingsToCloud(settings);
       }
       applySettings();
-      alert("Configurações salvas e atualizadas em todos os dispositivos!");
+      alert("Configurações salvas e sincronizadas em nuvem!");
     }
 
     async function saveProduct() {
@@ -826,7 +812,7 @@
       document.getElementById('prodImage').value = "";
       document.getElementById('form-product-title').innerText = "Adicionar Novo Produto";
 
-      alert("Produto salvo em tempo real!");
+      alert("Produto salvo com sucesso! Já está visível em todos os telemóveis e computadores.");
     }
 
     function editProduct(index) {
