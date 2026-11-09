@@ -32,7 +32,6 @@
       min-height: 100vh;
     }
 
-    /* HEADER */
     header {
       background: linear-gradient(180deg, rgba(255,122,0,0.2) 0%, rgba(13,15,18,0) 100%),
                   radial-gradient(circle at top left, rgba(255,122,0,0.15), transparent 50%);
@@ -88,7 +87,6 @@
       color: #fff;
     }
 
-    /* FILTROS */
     .filter-bar {
       display: flex;
       gap: 10px;
@@ -122,7 +120,6 @@
       box-shadow: 0 4px 15px rgba(255, 122, 0, 0.3);
     }
 
-    /* CONTAINER PRINCIPAL */
     .container {
       max-width: 900px;
       margin: 0 auto;
@@ -149,7 +146,6 @@
       margin-left: 10px;
     }
 
-    /* GRID & CARDS */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -251,7 +247,6 @@
       background: var(--primary-hover);
     }
 
-    /* BARRA FIXA CARRINHO */
     .cart-bar {
       position: fixed;
       bottom: 15px;
@@ -297,7 +292,6 @@
       box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
     }
 
-    /* MODAIS */
     .modal {
       display: none;
       position: fixed;
@@ -458,7 +452,6 @@
         <button class="close-btn" onclick="closeModal('adminModal')">&times;</button>
       </div>
 
-      <!-- CONFIGURAÇÕES GERAIS -->
       <h3 style="color: var(--primary-color); font-size: 1rem; margin-bottom: 8px;">Configurações do Site</h3>
       <div style="margin-bottom: 10px;">
         <label style="font-size:0.8rem; color:var(--text-muted);">Número do WhatsApp (DDD + Número):</label>
@@ -478,7 +471,6 @@
 
       <hr style="border-color: var(--card-border); margin: 20px 0;">
 
-      <!-- ADICIONAR / EDITAR PRODUTO -->
       <h3 style="color: var(--primary-color); font-size: 1rem; margin-bottom: 8px;" id="form-product-title">Adicionar Novo Produto</h3>
       <input type="hidden" id="prodId">
       <input type="text" id="prodCategory" class="input-field" placeholder="Categoria (ex: COPÕES, CERVEJAS)">
@@ -491,18 +483,16 @@
 
       <hr style="border-color: var(--card-border); margin: 20px 0;">
 
-      <!-- LISTA DE PRODUTOS -->
       <h3 style="color: var(--primary-color); font-size: 1rem; margin-bottom: 8px;">Produtos Cadastrados</h3>
       <div id="admin-product-list"></div>
     </div>
   </div>
 
-  <!-- CONEXÃO FIREBASE COM SUAS CHAVES REAIS -->
+  <!-- SCRIPT INTEGRADO DO FIREBASE + LÓGICA DA APLICAÇÃO -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Suas chaves exatas do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyAD8YdIawzegcUmapHPHh49PlWY_UNLOQs",
       authDomain: "adega-ipanema.firebaseapp.com",
@@ -516,7 +506,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Produtos padrão para carregar caso o banco esteja vazio no início
     const defaultProducts = [
       { category: "COPÕES", name: "Copão de Gin", desc: "Sabor refrescante com tônica e especiarias", price: 10.00, img: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80" },
       { category: "COPÕES", name: "Copão Whisky Red Label", desc: "Acompanha gelo de coco e energético", price: 20.00, img: "https://images.unsplash.com/photo-1527281400683-1aae777175f8?auto=format&fit=crop&w=400&q=80" },
@@ -526,8 +515,10 @@
       { category: "REFRIGERANTES & ÁGUA", name: "Coca-Cola", desc: "Lata 350ml geladinha", price: 6.00, img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=400&q=80" }
     ];
 
-    window.products = [];
-    window.settings = JSON.parse(localStorage.getItem('ipanema_settings')) || {
+    let products = [];
+    let cart = [];
+    let selectedCategory = "TODOS";
+    let settings = JSON.parse(localStorage.getItem('ipanema_settings')) || {
       whatsapp: "5569999999999",
       bgColor: "#0d0f12",
       primaryColor: "#ff7a00"
@@ -536,22 +527,21 @@
     // ESCUTAR BANCO DE DADOS EM TEMPO REAL
     onSnapshot(collection(db, "products"), (snapshot) => {
       let loadedProducts = [];
-      snapshot.forEach((doc) => {
-        loadedProducts.push({ id: doc.id, ...doc.data() });
+      snapshot.forEach((docSnap) => {
+        loadedProducts.push({ id: docSnap.id, ...docSnap.data() });
       });
 
       if (loadedProducts.length === 0 && !snapshot.metadata.fromCache) {
-        // Se o banco de dados estiver novo e vazio, insere os produtos iniciais
         defaultProducts.forEach(async (p, idx) => {
           const id = "prod_" + idx + "_" + Date.now();
           await setDoc(doc(db, "products", id), p);
         });
       } else {
-        window.products = loadedProducts;
-        window.renderFilters();
-        window.renderMenu();
+        products = loadedProducts;
+        renderFilters();
+        renderMenu();
         if (document.getElementById('adminModal').style.display === 'flex') {
-          window.renderAdminProducts();
+          renderAdminProducts();
         }
       }
     });
@@ -559,43 +549,23 @@
     // ESCUTAR CONFIGURAÇÕES NA NUVEM
     onSnapshot(doc(db, "settings", "general"), (docSnap) => {
       if (docSnap.exists()) {
-        window.settings = docSnap.data();
-        localStorage.setItem('ipanema_settings', JSON.stringify(window.settings));
-        window.applySettings();
+        settings = docSnap.data();
+        localStorage.setItem('ipanema_settings', JSON.stringify(settings));
+        applySettings();
       }
     });
 
-    // FUNÇÕES DE COMUNICAÇÃO COM O FIREBASE
-    window.saveProductToCloud = async function(id, productData) {
-      const prodId = id || "prod_" + Date.now();
-      await setDoc(doc(db, "products", prodId), productData);
-    };
-
-    window.deleteProductFromCloud = async function(id) {
-      await deleteDoc(doc(db, "products", id));
-    };
-
-    window.saveSettingsToCloud = async function(settingsData) {
-      await setDoc(doc(db, "settings", "general"), settingsData);
-    };
-  </script>
-
-  <script>
-    let cart = [];
-    let selectedCategory = "TODOS";
-
-    // APLICAR CONFIGURAÇÕES
-    function applySettings() {
+    // FUNÇÕES DISPONIBILIZADAS NO ESCOPO GLOBAL (window) PARA FUNCIONAR COM O HTML
+    window.applySettings = function() {
       document.documentElement.style.setProperty('--bg-color', settings.bgColor);
       document.documentElement.style.setProperty('--primary-color', settings.primaryColor);
       
       document.getElementById('cfgWhatsapp').value = settings.whatsapp || "";
       document.getElementById('cfgBgColor').value = settings.bgColor || "#0d0f12";
       document.getElementById('cfgPrimaryColor').value = settings.primaryColor || "#ff7a00";
-    }
+    };
 
-    // RENDERIZAR FILTROS
-    function renderFilters() {
+    window.renderFilters = function() {
       const filterBar = document.getElementById('category-filters');
       const categories = ["TODOS", ...new Set(products.map(p => p.category))];
 
@@ -604,16 +574,15 @@
           ${cat}
         </button>
       `).join('');
-    }
+    };
 
-    function filterCategory(cat) {
+    window.filterCategory = function(cat) {
       selectedCategory = cat;
       renderFilters();
       renderMenu();
-    }
+    };
 
-    // RENDERIZAR CARDÁPIO NA TELA
-    function renderMenu() {
+    window.renderMenu = function() {
       const container = document.getElementById('menu-container');
       container.innerHTML = '';
 
@@ -637,6 +606,7 @@
 
         catProducts.forEach(p => {
           const defaultImg = "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=400&q=80";
+          const safeName = p.name.replace(/'/g, "\\'");
           html += `
             <div class="card">
               <div class="card-img-wrapper">
@@ -649,7 +619,7 @@
                 </div>
                 <div class="card-footer">
                   <div class="price">R$ ${Number(p.price).toFixed(2).replace('.', ',')}</div>
-                  <button class="btn-add" onclick="addToCart('${p.name.replace(/'/g, "\\'")}', ${p.price})">
+                  <button class="btn-add" onclick="addToCart('${safeName}', ${p.price})">
                     <i class="fa-solid fa-plus"></i> Adicionar
                   </button>
                 </div>
@@ -661,14 +631,14 @@
         html += `</div>`;
         container.innerHTML += html;
       });
-    }
+    };
 
-    // RENDERIZAR LISTA NO PAINEL ADMIN
-    function renderAdminProducts() {
+    window.renderAdminProducts = function() {
       const list = document.getElementById('admin-product-list');
       list.innerHTML = '';
 
       products.forEach((p, index) => {
+        const safeName = p.name.replace(/'/g, "\\'");
         list.innerHTML += `
           <div class="admin-item">
             <div>
@@ -677,15 +647,14 @@
             </div>
             <div style="display:flex; gap:6px;">
               <button class="btn-sm btn-edit" onclick="editProduct(${index})"><i class="fa-solid fa-pen"></i></button>
-              <button class="btn-sm btn-delete" onclick="deleteProduct('${p.id}', '${p.name.replace(/'/g, "\\'")}')"><i class="fa-solid fa-trash"></i></button>
+              <button class="btn-sm btn-delete" onclick="deleteProduct('${p.id}', '${safeName}')"><i class="fa-solid fa-trash"></i></button>
             </div>
           </div>
         `;
       });
-    }
+    };
 
-    // CARRINHO
-    function addToCart(name, price) {
+    window.addToCart = function(name, price) {
       const existing = cart.find(item => item.name === name);
       if (existing) {
         existing.qty += 1;
@@ -693,9 +662,9 @@
         cart.push({ name, price: Number(price), qty: 1 });
       }
       updateCartUI();
-    }
+    };
 
-    function changeQty(name, delta) {
+    window.changeQty = function(name, delta) {
       const item = cart.find(i => i.name === name);
       if (item) {
         item.qty += delta;
@@ -703,40 +672,43 @@
       }
       updateCartUI();
       renderCartItems();
-    }
+    };
 
-    function updateCartUI() {
+    window.updateCartUI = function() {
       const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
       const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
       document.getElementById('cart-count').innerText = `${totalCount} item(ns) selecionado(s)`;
       document.getElementById('cart-total').innerText = `Total: R$ ${totalPrice.toFixed(2).replace('.', ',')}`;
       document.getElementById('modal-total').innerText = `Total: R$ ${totalPrice.toFixed(2).replace('.', ',')}`;
-    }
+    };
 
-    function renderCartItems() {
+    window.renderCartItems = function() {
       const container = document.getElementById('cart-items');
       if (cart.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px 0;">Seu carrinho está vazio.</p>';
         return;
       }
 
-      container.innerHTML = cart.map(item => `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
-          <div>
-            <strong style="color:#fff; font-size:0.95rem;">${item.name}</strong><br>
-            <small style="color:var(--text-muted);">R$ ${item.price.toFixed(2).replace('.', ',')} un.</small>
+      container.innerHTML = cart.map(item => {
+        const safeName = item.name.replace(/'/g, "\\'");
+        return `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
+            <div>
+              <strong style="color:#fff; font-size:0.95rem;">${item.name}</strong><br>
+              <small style="color:var(--text-muted);">R$ ${item.price.toFixed(2).replace('.', ',')} un.</small>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button style="background:rgba(255,255,255,0.1); color:#fff; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer;" onclick="changeQty('${safeName}', -1)">-</button>
+              <span style="font-weight:bold;">${item.qty}</span>
+              <button style="background:rgba(255,255,255,0.1); color:#fff; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer;" onclick="changeQty('${safeName}', 1)">+</button>
+            </div>
           </div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <button style="background:rgba(255,255,255,0.1); color:#fff; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer;" onclick="changeQty('${item.name.replace(/'/g, "\\'")}', -1)">-</button>
-            <span style="font-weight:bold;">${item.qty}</span>
-            <button style="background:rgba(255,255,255,0.1); color:#fff; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer;" onclick="changeQty('${item.name.replace(/'/g, "\\'")}', 1)">+</button>
-          </div>
-        </div>
-      `).join('');
-    }
+        `;
+      }).join('');
+    };
 
-    function sendWhatsApp() {
+    window.sendWhatsApp = function() {
       if (cart.length === 0) return alert("Adicione produtos ao carrinho!");
       const name = document.getElementById('custName').value.trim();
       const address = document.getElementById('custAddress').value.trim();
@@ -754,15 +726,14 @@
       text += `\n*VALOR TOTAL: R$ ${total.toFixed(2).replace('.', ',')}*`;
 
       window.open(`https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(text)}`, '_blank');
-    }
+    };
 
-    // MODAIS E ADMIN
-    function openCartModal() {
+    window.openCartModal = function() {
       renderCartItems();
       document.getElementById('cartModal').style.display = 'flex';
-    }
+    };
 
-    function openAdminModal() {
+    window.openAdminModal = function() {
       const pass = prompt("Digite a senha do painel:");
       if (pass === "1234") {
         renderAdminProducts();
@@ -770,25 +741,23 @@
       } else if (pass !== null) {
         alert("Senha incorreta!");
       }
-    }
+    };
 
-    function closeModal(id) {
+    window.closeModal = function(id) {
       document.getElementById(id).style.display = 'none';
-    }
+    };
 
-    async function saveSettings() {
+    window.saveSettings = async function() {
       settings.whatsapp = document.getElementById('cfgWhatsapp').value.trim();
       settings.bgColor = document.getElementById('cfgBgColor').value;
       settings.primaryColor = document.getElementById('cfgPrimaryColor').value;
 
-      if (window.saveSettingsToCloud) {
-        await window.saveSettingsToCloud(settings);
-      }
+      await setDoc(doc(db, "settings", "general"), settings);
       applySettings();
       alert("Configurações salvas e sincronizadas em nuvem!");
-    }
+    };
 
-    async function saveProduct() {
+    window.saveProduct = async function() {
       const cat = document.getElementById('prodCategory').value.trim().toUpperCase();
       const name = document.getElementById('prodName').value.trim();
       const desc = document.getElementById('prodDesc').value.trim();
@@ -799,10 +768,9 @@
       if (!cat || !name || isNaN(price)) return alert("Preencha Categoria, Nome e Preço!");
 
       const productData = { category: cat, name, desc, price, img };
+      const idToSave = prodId || "prod_" + Date.now();
 
-      if (window.saveProductToCloud) {
-        await window.saveProductToCloud(prodId || null, productData);
-      }
+      await setDoc(doc(db, "products", idToSave), productData);
 
       document.getElementById('prodId').value = "";
       document.getElementById('prodCategory').value = "";
@@ -812,10 +780,10 @@
       document.getElementById('prodImage').value = "";
       document.getElementById('form-product-title').innerText = "Adicionar Novo Produto";
 
-      alert("Produto salvo com sucesso! Já está visível em todos os telemóveis e computadores.");
-    }
+      alert("Produto salvo com sucesso no Firebase!");
+    };
 
-    function editProduct(index) {
+    window.editProduct = function(index) {
       const p = products[index];
       document.getElementById('prodCategory').value = p.category;
       document.getElementById('prodName').value = p.name;
@@ -824,17 +792,17 @@
       document.getElementById('prodImage').value = p.img || '';
       document.getElementById('prodId').value = p.id || '';
       document.getElementById('form-product-title').innerText = "Editar Produto";
-    }
+    };
 
-    async function deleteProduct(id, name) {
+    window.deleteProduct = async function(id, name) {
       if (confirm(`Excluir "${name}"?`)) {
-        if (window.deleteProductFromCloud && id) {
-          await window.deleteProductFromCloud(id);
+        if (id) {
+          await deleteDoc(doc(db, "products", id));
         }
       }
-    }
+    };
 
-    // INICIALIZAR
+    // Inicialização ao carregar a página
     applySettings();
   </script>
 </body>
