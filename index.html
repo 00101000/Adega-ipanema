@@ -32,6 +32,7 @@
       min-height: 100vh;
     }
 
+    /* HEADER */
     header {
       background: linear-gradient(180deg, rgba(255,122,0,0.2) 0%, rgba(13,15,18,0) 100%),
                   radial-gradient(circle at top left, rgba(255,122,0,0.15), transparent 50%);
@@ -87,6 +88,7 @@
       color: #fff;
     }
 
+    /* FILTROS */
     .filter-bar {
       display: flex;
       gap: 10px;
@@ -120,6 +122,7 @@
       box-shadow: 0 4px 15px rgba(255, 122, 0, 0.3);
     }
 
+    /* CONTAINER PRINCIPAL */
     .container {
       max-width: 900px;
       margin: 0 auto;
@@ -146,6 +149,7 @@
       margin-left: 10px;
     }
 
+    /* GRID & CARDS */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -247,6 +251,7 @@
       background: var(--primary-hover);
     }
 
+    /* BARRA FIXA CARRINHO */
     .cart-bar {
       position: fixed;
       bottom: 15px;
@@ -292,6 +297,7 @@
       box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
     }
 
+    /* MODAIS */
     .modal {
       display: none;
       position: fixed;
@@ -452,46 +458,67 @@
         <button class="close-btn" onclick="closeModal('adminModal')">&times;</button>
       </div>
 
-      <h3 style="color: var(--primary-color); font-size: 1rem; margin-bottom: 8px;">Configurações do Site</h3>
-      <div style="margin-bottom: 10px;">
-        <label style="font-size:0.8rem; color:var(--text-muted);">Número do WhatsApp (DDD + Número):</label>
-        <input type="text" id="cfgWhatsapp" class="input-field" placeholder="Ex: 5569999999999">
+      <!-- TELA DE LOGIN (Visível se NÃO estiver logado) -->
+      <div id="admin-login-screen">
+        <h3 style="color: var(--primary-color); font-size: 1rem; margin-bottom: 8px;">Acesso Restrito</h3>
+        <input type="email" id="loginEmail" class="input-field" placeholder="E-mail do Administrador">
+        <input type="password" id="loginPassword" class="input-field" placeholder="Senha">
+        <button class="btn-save" style="background:var(--primary-color); color:#fff; margin-top:12px;" onclick="handleLogin()">Entrar</button>
+        <p id="loginError" style="color:#e74c3c; font-size:0.85rem; margin-top:8px; display:none;"></p>
       </div>
-      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <div style="flex: 1;">
-          <label style="font-size:0.8rem; color:var(--text-muted);">Fundo:</label>
-          <input type="color" id="cfgBgColor" class="input-field" style="height: 40px; padding: 2px;">
+
+      <!-- CONTEÚDO DO PAINEL (Exibido após o Login) -->
+      <div id="admin-panel-content" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <span id="user-email-display" style="font-size:0.85rem; color:var(--text-muted);"></span>
+          <button class="btn-sm btn-delete" onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
         </div>
-        <div style="flex: 1;">
-          <label style="font-size:0.8rem; color:var(--text-muted);">Cor Principal:</label>
-          <input type="color" id="cfgPrimaryColor" class="input-field" style="height: 40px; padding: 2px;">
+
+        <!-- CONFIGURAÇÕES GERAIS -->
+        <h3 style="color: var(--primary-color); font-size: 1rem; margin-bottom: 8px;">Configurações do Site</h3>
+        <div style="margin-bottom: 10px;">
+          <label style="font-size:0.8rem; color:var(--text-muted);">Número do WhatsApp (DDD + Número):</label>
+          <input type="text" id="cfgWhatsapp" class="input-field" placeholder="Ex: 5569999999999">
         </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+          <div style="flex: 1;">
+            <label style="font-size:0.8rem; color:var(--text-muted);">Fundo:</label>
+            <input type="color" id="cfgBgColor" class="input-field" style="height: 40px; padding: 2px;">
+          </div>
+          <div style="flex: 1;">
+            <label style="font-size:0.8rem; color:var(--text-muted);">Cor Principal:</label>
+            <input type="color" id="cfgPrimaryColor" class="input-field" style="height: 40px; padding: 2px;">
+          </div>
+        </div>
+        <button class="btn-save" style="background:var(--primary-color); color:#fff;" onclick="saveSettings()">Salvar Configurações</button>
+
+        <hr style="border-color: var(--card-border); margin: 20px 0;">
+
+        <!-- ADICIONAR / EDITAR PRODUTO -->
+        <h3 style="color: var(--primary-color); font-size: 1rem; margin-bottom: 8px;" id="form-product-title">Adicionar Novo Produto</h3>
+        <input type="hidden" id="prodId">
+        <input type="text" id="prodCategory" class="input-field" placeholder="Categoria (ex: COPÕES, CERVEJAS)">
+        <input type="text" id="prodName" class="input-field" placeholder="Nome do Produto">
+        <input type="text" id="prodDesc" class="input-field" placeholder="Descrição (Opcional)">
+        <input type="number" step="0.01" id="prodPrice" class="input-field" placeholder="Preço (R$)">
+        <input type="text" id="prodImage" class="input-field" placeholder="Link da Imagem (URL da foto)">
+        
+        <button class="btn-save" onclick="saveProduct()">Salvar Produto na Nuvem</button>
+
+        <hr style="border-color: var(--card-border); margin: 20px 0;">
+
+        <!-- LISTA DE PRODUTOS -->
+        <h3 style="color: var(--primary-color); font-size: 1rem; margin-bottom: 8px;">Produtos Cadastrados</h3>
+        <div id="admin-product-list"></div>
       </div>
-      <button class="btn-save" style="background:var(--primary-color); color:#fff;" onclick="saveSettings()">Salvar Configurações</button>
-
-      <hr style="border-color: var(--card-border); margin: 20px 0;">
-
-      <h3 style="color: var(--primary-color); font-size: 1rem; margin-bottom: 8px;" id="form-product-title">Adicionar Novo Produto</h3>
-      <input type="hidden" id="prodId">
-      <input type="text" id="prodCategory" class="input-field" placeholder="Categoria (ex: COPÕES, CERVEJAS)">
-      <input type="text" id="prodName" class="input-field" placeholder="Nome do Produto">
-      <input type="text" id="prodDesc" class="input-field" placeholder="Descrição (Opcional)">
-      <input type="number" step="0.01" id="prodPrice" class="input-field" placeholder="Preço (R$)">
-      <input type="text" id="prodImage" class="input-field" placeholder="Link da Imagem (URL da foto)">
-      
-      <button class="btn-save" onclick="saveProduct()">Salvar Produto na Nuvem</button>
-
-      <hr style="border-color: var(--card-border); margin: 20px 0;">
-
-      <h3 style="color: var(--primary-color); font-size: 1rem; margin-bottom: 8px;">Produtos Cadastrados</h3>
-      <div id="admin-product-list"></div>
     </div>
   </div>
 
-  <!-- SCRIPT INTEGRADO DO FIREBASE + LÓGICA DA APLICAÇÃO -->
+  <!-- SCRIPT FIREBASE + FIREBASE AUTH + LÓGICA DO SITE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAD8YdIawzegcUmapHPHh49PlWY_UNLOQs",
@@ -505,6 +532,7 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
 
     const defaultProducts = [
       { category: "COPÕES", name: "Copão de Gin", desc: "Sabor refrescante com tônica e especiarias", price: 10.00, img: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80" },
@@ -524,6 +552,23 @@
       primaryColor: "#ff7a00"
     };
 
+    // ESCUTAR AUTENTICAÇÃO DO USUÁRIO
+    onAuthStateChanged(auth, (user) => {
+      const loginScreen = document.getElementById('admin-login-screen');
+      const panelContent = document.getElementById('admin-panel-content');
+      const userDisplay = document.getElementById('user-email-display');
+
+      if (user) {
+        if (loginScreen) loginScreen.style.display = 'none';
+        if (panelContent) panelContent.style.display = 'block';
+        if (userDisplay) userDisplay.innerText = user.email;
+        if (typeof window.renderAdminProducts === 'function') window.renderAdminProducts();
+      } else {
+        if (loginScreen) loginScreen.style.display = 'block';
+        if (panelContent) panelContent.style.display = 'none';
+      }
+    });
+
     // ESCUTAR BANCO DE DADOS EM TEMPO REAL
     onSnapshot(collection(db, "products"), (snapshot) => {
       let loadedProducts = [];
@@ -538,10 +583,10 @@
         });
       } else {
         products = loadedProducts;
-        renderFilters();
-        renderMenu();
-        if (document.getElementById('adminModal').style.display === 'flex') {
-          renderAdminProducts();
+        window.renderFilters();
+        window.renderMenu();
+        if (document.getElementById('adminModal').style.display === 'flex' && auth.currentUser) {
+          window.renderAdminProducts();
         }
       }
     });
@@ -551,11 +596,37 @@
       if (docSnap.exists()) {
         settings = docSnap.data();
         localStorage.setItem('ipanema_settings', JSON.stringify(settings));
-        applySettings();
+        window.applySettings();
       }
     });
 
-    // FUNÇÕES DISPONIBILIZADAS NO ESCOPO GLOBAL (window) PARA FUNCIONAR COM O HTML
+    // FUNÇÕES DISPONIBILIZADAS NO WINDOW
+    window.handleLogin = async function() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const errorElement = document.getElementById('loginError');
+      errorElement.style.display = 'none';
+
+      if (!email || !password) {
+        errorElement.innerText = "Preencha e-mail e senha.";
+        errorElement.style.display = 'block';
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+      } catch (error) {
+        errorElement.innerText = "E-mail ou senha incorretos.";
+        errorElement.style.display = 'block';
+      }
+    };
+
+    window.handleLogout = async function() {
+      await signOut(auth);
+    };
+
     window.applySettings = function() {
       document.documentElement.style.setProperty('--bg-color', settings.bgColor);
       document.documentElement.style.setProperty('--primary-color', settings.primaryColor);
@@ -578,8 +649,8 @@
 
     window.filterCategory = function(cat) {
       selectedCategory = cat;
-      renderFilters();
-      renderMenu();
+      window.renderFilters();
+      window.renderMenu();
     };
 
     window.renderMenu = function() {
@@ -635,6 +706,7 @@
 
     window.renderAdminProducts = function() {
       const list = document.getElementById('admin-product-list');
+      if (!list) return;
       list.innerHTML = '';
 
       products.forEach((p, index) => {
@@ -661,7 +733,7 @@
       } else {
         cart.push({ name, price: Number(price), qty: 1 });
       }
-      updateCartUI();
+      window.updateCartUI();
     };
 
     window.changeQty = function(name, delta) {
@@ -670,8 +742,8 @@
         item.qty += delta;
         if (item.qty <= 0) cart = cart.filter(i => i.name !== name);
       }
-      updateCartUI();
-      renderCartItems();
+      window.updateCartUI();
+      window.renderCartItems();
     };
 
     window.updateCartUI = function() {
@@ -729,18 +801,12 @@
     };
 
     window.openCartModal = function() {
-      renderCartItems();
+      window.renderCartItems();
       document.getElementById('cartModal').style.display = 'flex';
     };
 
     window.openAdminModal = function() {
-      const pass = prompt("Digite a senha do painel:");
-      if (pass === "1234") {
-        renderAdminProducts();
-        document.getElementById('adminModal').style.display = 'flex';
-      } else if (pass !== null) {
-        alert("Senha incorreta!");
-      }
+      document.getElementById('adminModal').style.display = 'flex';
     };
 
     window.closeModal = function(id) {
@@ -753,7 +819,7 @@
       settings.primaryColor = document.getElementById('cfgPrimaryColor').value;
 
       await setDoc(doc(db, "settings", "general"), settings);
-      applySettings();
+      window.applySettings();
       alert("Configurações salvas e sincronizadas em nuvem!");
     };
 
@@ -802,8 +868,8 @@
       }
     };
 
-    // Inicialização ao carregar a página
-    applySettings();
+    // Inicialização ao carregar
+    window.applySettings();
   </script>
 </body>
 </html>
