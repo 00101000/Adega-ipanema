@@ -358,6 +358,28 @@
       border-color: var(--primary-color);
     }
 
+    .btn-upload-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px dashed var(--primary-color);
+      background: rgba(255, 122, 0, 0.08);
+      color: var(--primary-color);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-upload-label:hover {
+      background: rgba(255, 122, 0, 0.18);
+    }
+
     .btn-save {
       background: var(--green-color);
       color: #000;
@@ -497,9 +519,18 @@
         <input type="text" id="prodName" class="input-field" placeholder="Nome do Produto">
         <input type="text" id="prodDesc" class="input-field" placeholder="Descrição (Opcional)">
         <input type="number" step="0.01" id="prodPrice" class="input-field" placeholder="Preço (R$)">
-        <input type="text" id="prodImage" class="input-field" placeholder="Link da Imagem (URL da foto)" oninput="previewAdminImage(this.value)">
-        <img id="imgPreview" style="display:none; width:100%; height:120px; object-fit:cover; border-radius:10px; margin-top:10px; border:1px solid var(--card-border);" alt="Pré-visualização da imagem">
-        <p id="imgErrorMsg" style="display:none; color:#e74c3c; font-size:0.8rem; margin-top:6px;">Link inválido ou bloqueado. Copie o endereço direto da imagem.</p>
+
+        <!-- BOTÃO PARA ESCOLHER FOTO DO CELULAR/PC -->
+        <label for="prodImageFile" class="btn-upload-label">
+          <i class="fa-solid fa-camera"></i> Escolher Foto da Galeria / PC
+        </label>
+        <input type="file" id="prodImageFile" accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
+
+        <!-- CAMPO DE LINK OPCIONAL -->
+        <input type="text" id="prodImage" class="input-field" placeholder="Ou cole um link direto da imagem (opcional)" oninput="previewAdminImage(this.value)">
+        
+        <img id="imgPreview" style="display:none; width:100%; height:140px; object-fit:cover; border-radius:10px; margin-top:10px; border:1px solid var(--card-border);" alt="Pré-visualização">
+        <p id="imgErrorMsg" style="display:none; color:#e74c3c; font-size:0.8rem; margin-top:6px;">Não foi possível carregar este link. Escolha a foto pelo botão acima.</p>
         
         <button class="btn-save" onclick="saveProduct()">Salvar Produto na Nuvem</button>
 
@@ -529,7 +560,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // SENHA DE ACESSO DEFINIDA AQUI
     const ADMIN_PASSWORD = "1234";
 
     const defaultProducts = [
@@ -548,6 +578,40 @@
       whatsapp: "5569999999999",
       bgColor: "#0d0f12",
       primaryColor: "#ff7a00"
+    };
+
+    // UPLOAD DE ARQUIVO LOCAL COM COMPRESSÃO AUTOMÁTICA PARA O FIRESTORE
+    window.handleImageUpload = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const maxWidth = 500;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Converte para JPEG otimizado para caber com folga no Firestore
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+          document.getElementById('prodImage').value = compressedDataUrl;
+          window.previewAdminImage(compressedDataUrl);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
     };
 
     // PREVIEW DA IMAGEM NO PAINEL ADMIN
@@ -837,19 +901,24 @@
       const productData = { category: cat, name, desc, price, img };
       const idToSave = prodId || "prod_" + Date.now();
 
-      await setDoc(doc(db, "products", idToSave), productData);
+      try {
+        await setDoc(doc(db, "products", idToSave), productData);
 
-      document.getElementById('prodId').value = "";
-      document.getElementById('prodCategory').value = "";
-      document.getElementById('prodName').value = "";
-      document.getElementById('prodDesc').value = "";
-      document.getElementById('prodPrice').value = "";
-      document.getElementById('prodImage').value = "";
-      document.getElementById('imgPreview').style.display = 'none';
-      document.getElementById('imgErrorMsg').style.display = 'none';
-      document.getElementById('form-product-title').innerText = "Adicionar Novo Produto";
+        document.getElementById('prodId').value = "";
+        document.getElementById('prodCategory').value = "";
+        document.getElementById('prodName').value = "";
+        document.getElementById('prodDesc').value = "";
+        document.getElementById('prodPrice').value = "";
+        document.getElementById('prodImage').value = "";
+        document.getElementById('prodImageFile').value = "";
+        document.getElementById('imgPreview').style.display = 'none';
+        document.getElementById('imgErrorMsg').style.display = 'none';
+        document.getElementById('form-product-title').innerText = "Adicionar Novo Produto";
 
-      alert("Produto salvo com sucesso no Firebase!");
+        alert("Produto salvo com sucesso no Firebase!");
+      } catch (err) {
+        alert("Erro ao salvar no Firebase: " + err.message);
+      }
     };
 
     window.editProduct = function(index) {
