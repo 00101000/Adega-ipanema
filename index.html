@@ -604,7 +604,6 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Converte para JPEG otimizado para caber com folga no Firestore
           const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
           document.getElementById('prodImage').value = compressedDataUrl;
           window.previewAdminImage(compressedDataUrl);
