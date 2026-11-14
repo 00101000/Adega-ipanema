@@ -392,6 +392,11 @@
       margin-top: 12px;
     }
 
+    .btn-save:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     .admin-item {
       display: flex;
       justify-content: space-between;
@@ -532,7 +537,7 @@
         <img id="imgPreview" style="display:none; width:100%; height:140px; object-fit:cover; border-radius:10px; margin-top:10px; border:1px solid var(--card-border);" alt="Pré-visualização">
         <p id="imgErrorMsg" style="display:none; color:#e74c3c; font-size:0.8rem; margin-top:6px;">Não foi possível carregar este link. Escolha a foto pelo botão acima.</p>
         
-        <button class="btn-save" onclick="saveProduct()">Salvar Produto na Nuvem</button>
+        <button class="btn-save" id="btnSaveProduct" onclick="saveProduct(this)">Salvar Produto na Nuvem</button>
 
         <hr style="border-color: var(--card-border); margin: 20px 0;">
 
@@ -887,7 +892,7 @@
       alert("Configurações salvas e sincronizadas em nuvem!");
     };
 
-    window.saveProduct = async function() {
+    window.saveProduct = async function(btnSave) {
       const cat = document.getElementById('prodCategory').value.trim().toUpperCase();
       const name = document.getElementById('prodName').value.trim();
       const desc = document.getElementById('prodDesc').value.trim();
@@ -897,11 +902,23 @@
 
       if (!cat || !name || isNaN(price)) return alert("Preencha Categoria, Nome e Preço!");
 
+      const btn = btnSave || document.getElementById('btnSaveProduct');
+      const originalText = btn.innerText;
+      btn.innerText = "Salvando na nuvem...";
+      btn.disabled = true;
+
       const productData = { category: cat, name, desc, price, img };
       const idToSave = prodId || "prod_" + Date.now();
 
       try {
-        await setDoc(doc(db, "products", idToSave), productData);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Tempo esgotado (sem resposta do Firebase). Verifique a aba Console (F12).")), 6000)
+        );
+
+        await Promise.race([
+          setDoc(doc(db, "products", idToSave), productData),
+          timeoutPromise
+        ]);
 
         document.getElementById('prodId').value = "";
         document.getElementById('prodCategory').value = "";
@@ -916,7 +933,10 @@
 
         alert("Produto salvo com sucesso no Firebase!");
       } catch (err) {
-        alert("Erro ao salvar no Firebase: " + err.message);
+        alert("Erro ao salvar: " + err.message);
+      } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
       }
     };
 
